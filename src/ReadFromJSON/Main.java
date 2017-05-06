@@ -161,6 +161,7 @@ public class Main {
 			}
 		}
 		retLineTwo.put("unfulfilled_orders", unfulfilled_orders);
+		
 		//Compress the list of orders to only the ones that are eligeable for this algorithm
 		ArrayList<Order> ordersToCheck = eligeableOrders(parsedOrders, (Integer) obj.get("available_cookies"));
 		
@@ -188,6 +189,9 @@ public class Main {
 				unfulfilled_orders.add(order.getId());
 			}
 		}
+		//Replace the JSON values with updated values
+		retLineOne.replace("remaining_cookies", available_cookies);
+		retLineTwo.replace("unfulfilled_orders", unfulfilled_orders);
 		
 	}
 }
