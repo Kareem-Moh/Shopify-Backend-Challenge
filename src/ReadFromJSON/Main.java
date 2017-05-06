@@ -80,41 +80,41 @@ public class Main {
 		return retList;
 	}
 
-	private static ArrayList<Order> eligeableOrders(ArrayList<Order> orders, int available_cookies){
-		//Set temporary empty list of eligeable orders, will add later on
+	private static ArrayList<Order> eligeableOrders(ArrayList<Order> orders, int available_cookies) {
+		// Set temporary empty list of eligeable orders, will add later on
 		ArrayList<Order> eligeable_orders = new ArrayList<Order>();
-		//Iterate through all orders
-		for (Order o : orders){
-			//Check if it is not already fulfilled
-			if (!o.isFulfilled()){
-				//Iterate through the products of the unfulfilled order
-				for (Product p : o.getProducts()){
-					//Check if the products include cookies
-					if (p.getTitle().equals("Cookie")){
-						//Check if the cookie amount isn't higher than the initial available ones
-						if (p.getAmount() <= available_cookies){
-							//If all this is true, add to eligeable order list
+		// Iterate through all orders
+		for (Order o : orders) {
+			// Check if it is not already fulfilled
+			if (!o.isFulfilled()) {
+				// Iterate through the products of the unfulfilled order
+				for (Product p : o.getProducts()) {
+					// Check if the products include cookies
+					if (p.getTitle().equals("Cookie")) {
+						// Check if the cookie amount isn't higher than the
+						// initial available ones
+						if (p.getAmount() <= available_cookies) {
+							// If all this is true, add to eligeable order list
 							eligeable_orders.add(o);
 						}
 					}
 				}
 			}
 		}
-		//Return eligeable order list
+		// Return eligeable order list
 		return eligeable_orders;
 	}
-	
-	private static Product getCookie(ArrayList<Product> products){
-		for (Product p : products){
-			if (p.getTitle().equals("Cookie")){
+
+	private static Product getCookie(ArrayList<Product> products) {
+		for (Product p : products) {
+			if (p.getTitle().equals("Cookie")) {
 				return p;
 			}
 		}
 		return null;
 	}
-	
-	public static void main(String[] args) throws IOException, JSONException {
 
+	public static JSONObject solve() throws JSONException, IOException {
 		// Create temp non-empty arraylist to start while loop
 		JSONObject obj = readJsonFromUrl(Constants.leadingJsonURL + Constants.URLPageParam);
 		JSONArray orders = obj.getJSONArray("orders");
@@ -141,19 +141,20 @@ public class Main {
 		// Set the temporary return values, this will be updated
 		HashMap<String, Integer> retLineOne = new HashMap<String, Integer>();
 		HashMap<String, ArrayList<Integer>> retLineTwo = new HashMap<String, ArrayList<Integer>>();
-		
+
 		Integer available_cookies = new Integer((Integer) obj.get("available_cookies"));
 		// Set line one as the total remaining cookies at the beginning
 		retLineOne.put("remaining_cookies", available_cookies);
-		
-		// Set line two as all impossible orders (i.e more cookies than inventory) that are seen at first glance
+
+		// Set line two as all impossible orders (i.e more cookies than
+		// inventory) that are seen at first glance
 		// will add more unfulfillable orders later
 		ArrayList<Integer> unfulfilled_orders = new ArrayList<Integer>();
-		for (Order or : parsedOrders){
-			if (!or.isFulfilled()){
-				for (Product p : or.getProducts()){
-					if (p.getTitle().equals("Cookie")){
-						if (getCookie(or.getProducts()).getAmount() > available_cookies){
+		for (Order or : parsedOrders) {
+			if (!or.isFulfilled()) {
+				for (Product p : or.getProducts()) {
+					if (p.getTitle().equals("Cookie")) {
+						if (getCookie(or.getProducts()).getAmount() > available_cookies) {
 							unfulfilled_orders.add(or.getId());
 						}
 					}
@@ -161,37 +162,46 @@ public class Main {
 			}
 		}
 		retLineTwo.put("unfulfilled_orders", unfulfilled_orders);
-		
-		//Compress the list of orders to only the ones that are eligeable for this algorithm
+
+		// Compress the list of orders to only the ones that are eligeable for
+		// this algorithm
 		ArrayList<Order> ordersToCheck = eligeableOrders(parsedOrders, (Integer) obj.get("available_cookies"));
-		
-		//Sort by cookie amount descending (level 1) and by id ascending (level 2)
+
+		// Sort by cookie amount descending (level 1) and by id ascending (level
+		// 2)
 		Collections.sort(ordersToCheck, new Comparator<Order>() {
 			@Override
 			public int compare(Order o1, Order o2) {
-				if (getCookie(o1.getProducts()).getAmount() - getCookie(o2.getProducts()).getAmount() == 0){
+				if (getCookie(o1.getProducts()).getAmount() - getCookie(o2.getProducts()).getAmount() == 0) {
 					return (o1.getId() - o2.getId());
-				}
-				else {
+				} else {
 					return (getCookie(o2.getProducts()).getAmount() - getCookie(o1.getProducts()).getAmount());
 				}
 			}
-	    });
-		
-		// Now for the final step. Iterate through these last few orders to determine which cannot be fulfilled
-		for (Order order : ordersToCheck){
-			//Check if number of cookies in curr order is less than or equal to available cookies left
-			if (getCookie(order.getProducts()).getAmount() <= available_cookies){
-				//If so add to sum and decrement available cookies
+		});
+
+		// Now for the final step. Iterate through these last few orders to
+		// determine which cannot be fulfilled
+		for (Order order : ordersToCheck) {
+			// Check if number of cookies in curr order is less than or equal to
+			// available cookies left
+			if (getCookie(order.getProducts()).getAmount() <= available_cookies) {
+				// If so add to sum and decrement available cookies
 				available_cookies -= getCookie(order.getProducts()).getAmount();
-			}
-			else {
+			} else {
 				unfulfilled_orders.add(order.getId());
 			}
 		}
-		//Replace the JSON values with updated values
-		retLineOne.replace("remaining_cookies", available_cookies);
-		retLineTwo.replace("unfulfilled_orders", unfulfilled_orders);
-		
+		// Set Up the final return value
+		JSONObject finalReturnValue = new JSONObject();
+
+		finalReturnValue.put("remaining_cookies", available_cookies);
+		finalReturnValue.put("unfulfilled_orders", unfulfilled_orders);
+
+		return finalReturnValue;
+	}
+
+	public static void main(String[] args) throws IOException, JSONException {
+		System.out.println(solve());
 	}
 }
