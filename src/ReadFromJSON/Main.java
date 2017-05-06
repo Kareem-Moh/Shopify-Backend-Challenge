@@ -142,15 +142,26 @@ public class Main {
 		HashMap<String, Integer> retLineOne = new HashMap<String, Integer>();
 		HashMap<String, ArrayList<Integer>> retLineTwo = new HashMap<String, ArrayList<Integer>>();
 		
+		Integer available_cookies = new Integer((Integer) obj.get("available_cookies"));
 		// Set line one as the total remaining cookies at the beginning
-		retLineOne.put("remaining_cookies", (Integer) obj.get("available_cookies"));
-		// Set line two as all orders are unfilled, will remove later
+		retLineOne.put("remaining_cookies", available_cookies);
+		
+		// Set line two as all impossible orders (i.e more cookies than inventory) that are seen at first glance
+		// will add more unfulfillable orders later
 		ArrayList<Integer> unfulfilled_orders = new ArrayList<Integer>();
 		for (Order or : parsedOrders){
-			unfulfilled_orders.add(or.getId());
+			if (!or.isFulfilled()){
+				for (Product p : or.getProducts()){
+					if (p.getTitle().equals("Cookie")){
+						if (getCookie(or.getProducts()).getAmount() > available_cookies){
+							unfulfilled_orders.add(or.getId());
+						}
+					}
+				}
+			}
 		}
 		retLineTwo.put("unfulfilled_orders", unfulfilled_orders);
-		
+		System.out.println(unfulfilled_orders);
 		//Compress the list of orders to only the ones that are eligeable for this algorithm
 		ArrayList<Order> ordersToCheck = eligeableOrders(parsedOrders, (Integer) obj.get("available_cookies"));
 		
@@ -164,17 +175,20 @@ public class Main {
 				else {
 					return (getCookie(o2.getProducts()).getAmount() - getCookie(o1.getProducts()).getAmount());
 				}
-				
 			}
 	    });
 		
-		for (Order ord : ordersToCheck){
-			for (Product p : ord.getProducts()){
-				if (p.getTitle().equals("Cookie")){
-					System.out.print(p.getAmount() + "    " + ord.getId());
-					System.out.println();
-				}
+		// Now for the final step. Iterate through these last few orders to determine which cannot be fulfilled
+		for (Order order : ordersToCheck){
+			//Check if number of cookies in curr order is less than or equal to available cookies left
+			if (getCookie(order.getProducts()).getAmount() <= available_cookies){
+				//If so add to sum and decrement available cookies
+				available_cookies -= getCookie(order.getProducts()).getAmount();
+			}
+			else {
+				unfulfilled_orders.add(order.getId());
 			}
 		}
+		System.out.println(unfulfilled_orders);
 	}
 }
